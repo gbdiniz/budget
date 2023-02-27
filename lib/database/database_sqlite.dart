@@ -22,11 +22,18 @@ class DatabaseSqlite {
         batch.execute('''
           create table psd(
             id Integer primary key autoincrement,
-            dinheiroatual REAL(12)
+            dinheiroatual REAL(12),
+            dinheirorecebido REAL(12)
           )
         ''');
 
-        batch.insert('psd', {'dinheiroatual': 0.00});
+        batch.insert(
+          'psd',
+          {
+            'dinheiroatual': 0.0,
+            'dinheirorecebido': 0.0,
+          },
+        );
 
         batch.commit();
       },

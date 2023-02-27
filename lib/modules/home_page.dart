@@ -2,6 +2,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:pattern_formatter/numeric_formatter.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:planejando_seu_dinheiro/Database/database_sqlite.dart';
@@ -15,7 +18,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<DinheiroModel> dinheiros = [];
-  bool isLoading = true;
+  var quantityController = TextEditingController();
+  var _isLoading = true;
 
   @override
   void initState() {
@@ -23,7 +27,30 @@ class _HomePageState extends State<HomePage> {
     _select();
   }
 
-  _select() async {
+  Future<void> _selectQuantity() async {
+    Get.defaultDialog(
+        title: 'Selecione a quantidade',
+        content: Padding(
+          padding: EdgeInsets.all(8),
+          child: TextFormField(
+            decoration: InputDecoration(prefix: Text('R\$ ')),
+            controller: quantityController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              ThousandsFormatter(
+                formatter: NumberFormat('###,###,###.##'),
+                allowFraction: true,
+              )
+            ],
+          ),
+        ),
+        onConfirm: () {
+          _addMoney();
+          Get.back();
+        });
+  }
+
+  void _select() async {
     final database = await DatabaseSqlite().openConnection();
     var result = await database.query('psd');
     print(result);
@@ -32,25 +59,52 @@ class _HomePageState extends State<HomePage> {
       dinheiros = result
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
-      isLoading = false;
+      _isLoading = false;
     });
   }
 
-  _addMoney() async {
+  void _addMoney() async {
     final database = await DatabaseSqlite().openConnection();
     var result = await database.query('psd');
     setState(() {
       dinheiros = result
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
-      double total = dinheiros[0].dinheiroatual + 100.50;
+      double total = double.parse(
+            dinheiros[0].dinheiroAtual.toStringAsFixed(2),
+          ) +
+          double.parse(quantityController.text);
+
       database.update(
         'psd',
         {'dinheiroatual': total},
         where: 'dinheiroatual = ?',
-        whereArgs: [dinheiros[0].dinheiroatual],
+        whereArgs: [dinheiros[0].dinheiroAtual],
       );
-      print(dinheiros[0].dinheiroatual);
+      database.update(
+        'psd',
+        {'dinheirorecebido': total},
+        where: 'dinheirorecebido = ?',
+        whereArgs: [dinheiros[0].dinheiroAtual],
+      );
+      print(dinheiros[0].dinheiroAtual);
+    });
+    _select();
+  }
+
+  void _tirarDinheiro() async {
+    final database = await DatabaseSqlite().openConnection();
+    var result = await database.query('psd');
+    setState(() {
+      dinheiros = result
+          .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
+          .toList();
+      database.update(
+        'psd',
+        {'dinheiroatual': 0.00},
+        where: 'dinheiroatual = ?',
+        whereArgs: [dinheiros[0].dinheiroAtual],
+      );
     });
     _select();
   }
@@ -61,41 +115,96 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            if (isLoading) {
+            if (_isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             } else {
-              var dinheiroFormatado = dinheiros[0]
-                  .dinheiroatual
-                  .toStringAsFixed(2)
-                  .replaceAll('.', ',');
+              var dinheiroFormatado = NumberFormat.simpleCurrency(
+                locale: 'pt-BR',
+                decimalDigits: 2,
+              ).format(dinheiros[0].dinheiroAtual);
 
               return Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
-                    width: double.infinity,
-                    height: 160,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Dinheiros',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              'R\$ $dinheiroFormatado',
-                              style: const TextStyle(fontSize: 20),
-                            )
-                          ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
+                      child: Text(
+                        dinheiroFormatado,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Recebido',
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                Text(
+                                  '+ R\$11,00',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Gastos',
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                Text(
+                                  '- R\$11,00',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
                 ],
               );
             }
@@ -111,11 +220,20 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: FloatingActionButton(
                   onPressed: () {
-                    _addMoney();
+                    _tirarDinheiro();
+                  },
+                  child: const Icon(Icons.remove),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    _selectQuantity();
                   },
                   child: const Icon(Icons.add),
                 ),
-              )
+              ),
             ],
           );
         },
@@ -125,24 +243,24 @@ class _HomePageState extends State<HomePage> {
 }
 
 class DinheiroModel {
-  int id;
-  double dinheiroatual;
+  double dinheiroAtual;
+  double dinheiroRecebido;
   DinheiroModel({
-    required this.id,
-    required this.dinheiroatual,
+    required this.dinheiroAtual,
+    required this.dinheiroRecebido,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'id': id,
-      'dinheiroatual': dinheiroatual,
+      'dinheiroAtual': dinheiroAtual,
+      'dinheiroRecebido': dinheiroRecebido,
     };
   }
 
   factory DinheiroModel.fromMap(Map<String, dynamic> map) {
     return DinheiroModel(
-      id: map['id'] as int,
-      dinheiroatual: map['dinheiroatual'] as double,
+      dinheiroAtual: map['dinheiroAtual'] as double,
+      dinheiroRecebido: map['dinheiroRecebido'] as double,
     );
   }
 
@@ -152,5 +270,6 @@ class DinheiroModel {
       DinheiroModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'DinheiroModel(id: $id, dinheiroatual: $dinheiroatual)';
+  String toString() =>
+      'DinheiroModel(dinheiroAtual: $dinheiroAtual, dinheiroRecebido: $dinheiroRecebido)';
 }
