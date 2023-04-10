@@ -18,8 +18,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<DinheiroModel> dinheiros = [];
+  List<GastosModel> gastos = [];
   var quantityController = TextEditingController();
   var _isLoading = true;
+  var plusButtonTapped = false;
+  var lessButtonTapped = false;
 
   @override
   void initState() {
@@ -27,13 +30,13 @@ class _HomePageState extends State<HomePage> {
     _select();
   }
 
-  Future<void> _selectQuantity() async {
+  Future<void> _selectQuantity([bool isRetrive = false]) async {
     Get.defaultDialog(
         title: 'Selecione a quantidade',
         content: Padding(
-          padding: EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           child: TextFormField(
-            decoration: InputDecoration(prefix: Text('R\$ ')),
+            decoration: const InputDecoration(prefix: Text('R\$ ')),
             controller: quantityController,
             keyboardType: TextInputType.number,
             inputFormatters: [
@@ -45,25 +48,29 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         onConfirm: () {
-          _addMoney();
+          isRetrive ? _retirarCapital() : _adicionarCapital();
           Get.back();
         });
   }
 
   void _select() async {
     final database = await DatabaseSqlite().openConnection();
-    var result = await database.query('psd');
-    print(result);
+    var regitroAtual = await database.query('psd');
+    var regitroDeGastos = await database.query('gastos');
+    print(regitroDeGastos);
 
     setState(() {
-      dinheiros = result
+      dinheiros = regitroAtual
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
+      // gastos = regitroDeGastos
+      //     .map<GastosModel>((result) => GastosModel.fromMap(result))
+      //     .toList();
       _isLoading = false;
     });
   }
 
-  void _addMoney() async {
+  void _adicionarCapital() async {
     final database = await DatabaseSqlite().openConnection();
     var result = await database.query('psd');
     setState(() {
@@ -74,6 +81,8 @@ class _HomePageState extends State<HomePage> {
             dinheiros[0].dinheiroAtual.toStringAsFixed(2),
           ) +
           double.parse(quantityController.text);
+      double totalAdicionado =
+          dinheiros[0].dinheiroRecebido + double.parse(quantityController.text);
 
       database.update(
         'psd',
@@ -83,27 +92,47 @@ class _HomePageState extends State<HomePage> {
       );
       database.update(
         'psd',
-        {'dinheirorecebido': total},
+        {'dinheirorecebido': totalAdicionado},
         where: 'dinheirorecebido = ?',
-        whereArgs: [dinheiros[0].dinheiroAtual],
+        whereArgs: [dinheiros[0].dinheiroRecebido],
       );
       print(dinheiros[0].dinheiroAtual);
     });
     _select();
   }
 
-  void _tirarDinheiro() async {
+  void _retirarCapital() async {
     final database = await DatabaseSqlite().openConnection();
     var result = await database.query('psd');
     setState(() {
       dinheiros = result
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
+      double total = double.parse(
+            dinheiros[0].dinheiroAtual.toStringAsFixed(2),
+          ) -
+          double.parse(quantityController.text);
+      double totalRetirado =
+          gastos[0].dinheiroGasto + double.parse(quantityController.text);
       database.update(
         'psd',
-        {'dinheiroatual': 0.00},
+        {'dinheirogasto': totalRetirado},
         where: 'dinheiroatual = ?',
         whereArgs: [dinheiros[0].dinheiroAtual],
+      );
+      database.update(
+        'psd',
+        {'dinheiroatual': total},
+        where: 'dinheiroatual = ?',
+        whereArgs: [dinheiros[0].dinheiroAtual],
+      );
+      database.insert(
+        'gastos',
+        {
+          'categoria': 'lazer',
+          'dinheirogasto':
+              gastos[0].dinheiroGasto + double.parse(quantityController.text)
+        },
       );
     });
     _select();
@@ -120,10 +149,18 @@ class _HomePageState extends State<HomePage> {
                 child: CircularProgressIndicator(),
               );
             } else {
-              var dinheiroFormatado = NumberFormat.simpleCurrency(
+              var dinheiroAtualFormatado = NumberFormat.simpleCurrency(
                 locale: 'pt-BR',
                 decimalDigits: 2,
               ).format(dinheiros[0].dinheiroAtual);
+              var dinheiroRecebidoFormatado = NumberFormat.simpleCurrency(
+                locale: 'pt-BR',
+                decimalDigits: 2,
+              ).format(dinheiros[0].dinheiroRecebido);
+              var dinheiroGastoFormatado = NumberFormat.simpleCurrency(
+                locale: 'pt-BR',
+                decimalDigits: 2,
+              ).format(gastos[0].dinheiroGasto);
 
               return Column(
                 children: [
@@ -132,7 +169,7 @@ class _HomePageState extends State<HomePage> {
                     child: Padding(
                       padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
                       child: Text(
-                        dinheiroFormatado,
+                        dinheiroAtualFormatado,
                         style: const TextStyle(
                           fontSize: 30,
                           fontFamily: 'Poppins',
@@ -153,7 +190,7 @@ class _HomePageState extends State<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Recebido',
                                   style: TextStyle(
                                     fontFamily: 'Montserrat',
@@ -161,8 +198,8 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                                 Text(
-                                  '+ R\$11,00',
-                                  style: TextStyle(
+                                  dinheiroRecebidoFormatado,
+                                  style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 20,
                                     color: Colors.green,
@@ -183,7 +220,7 @@ class _HomePageState extends State<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Gastos',
                                   style: TextStyle(
                                     fontFamily: 'Montserrat',
@@ -191,8 +228,8 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                                 Text(
-                                  '- R\$11,00',
-                                  style: TextStyle(
+                                  '- $dinheiroGastoFormatado',
+                                  style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 20,
                                     color: Colors.red,
@@ -218,21 +255,50 @@ class _HomePageState extends State<HomePage> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: FloatingActionButton(
-                  onPressed: () {
-                    _tirarDinheiro();
-                  },
-                  child: const Icon(Icons.remove),
-                ),
+                child: lessButtonTapped
+                    ? FloatingActionButton.extended(
+                        onPressed: () {
+                          setState(() {
+                            _selectQuantity(true);
+                          });
+                        },
+                        tooltip: 'Registrar gastos',
+                        label: const Text('Registrar gastos'),
+                        icon: const Icon(Icons.remove),
+                      )
+                    : FloatingActionButton(
+                        onPressed: () {
+                          setState(() {
+                            plusButtonTapped = false;
+                            lessButtonTapped = true;
+                          });
+                        },
+                        child: const Icon(Icons.remove),
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: FloatingActionButton(
-                  onPressed: () {
-                    _selectQuantity();
-                  },
-                  child: const Icon(Icons.add),
-                ),
+                child: plusButtonTapped
+                    ? FloatingActionButton.extended(
+                        onPressed: () {
+                          setState(() {
+                            _selectQuantity();
+                          });
+                        },
+                        tooltip: 'Adicionar dinheiro',
+                        label: const Text('Adicionar dinheiro'),
+                        icon: const Icon(Icons.add),
+                      )
+                    : FloatingActionButton(
+                        onPressed: () {
+                          setState(() {
+                            plusButtonTapped = true;
+                            lessButtonTapped = false;
+                          });
+                          print(plusButtonTapped);
+                        },
+                        child: const Icon(Icons.add),
+                      ),
               ),
             ],
           );
@@ -243,15 +309,18 @@ class _HomePageState extends State<HomePage> {
 }
 
 class DinheiroModel {
+  int id;
   double dinheiroAtual;
   double dinheiroRecebido;
   DinheiroModel({
+    required this.id,
     required this.dinheiroAtual,
     required this.dinheiroRecebido,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'id': id,
       'dinheiroAtual': dinheiroAtual,
       'dinheiroRecebido': dinheiroRecebido,
     };
@@ -259,6 +328,7 @@ class DinheiroModel {
 
   factory DinheiroModel.fromMap(Map<String, dynamic> map) {
     return DinheiroModel(
+      id: map['id'] as int,
       dinheiroAtual: map['dinheiroAtual'] as double,
       dinheiroRecebido: map['dinheiroRecebido'] as double,
     );
@@ -271,5 +341,37 @@ class DinheiroModel {
 
   @override
   String toString() =>
-      'DinheiroModel(dinheiroAtual: $dinheiroAtual, dinheiroRecebido: $dinheiroRecebido)';
+      'DinheiroModel(id: $id, dinheiroAtual: $dinheiroAtual, dinheiroRecebido: $dinheiroRecebido)';
+}
+
+class GastosModel {
+  String categoria;
+  double dinheiroGasto;
+  GastosModel({
+    required this.categoria,
+    required this.dinheiroGasto,
+  });
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'categoria': categoria,
+      'dinheiroGasto': dinheiroGasto,
+    };
+  }
+
+  factory GastosModel.fromMap(Map<String, dynamic> map) {
+    return GastosModel(
+      categoria: map['categoria'] as String,
+      dinheiroGasto: map['dinheiroGasto'] as double,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory GastosModel.fromJson(String source) =>
+      GastosModel.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() =>
+      'GastosModel(categoria: $categoria, dinheiroGasto: $dinheiroGasto)';
 }
