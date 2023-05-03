@@ -20,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   List<DinheiroModel> dinheiros = [];
   List<GastosModel> gastos = [];
   var quantityController = TextEditingController();
+  var categoriaController = TextEditingController();
   var _isLoading = true;
   var plusButtonTapped = false;
   var lessButtonTapped = false;
@@ -33,19 +34,31 @@ class _HomePageState extends State<HomePage> {
   Future<void> _selectQuantity([bool isRetrive = false]) async {
     Get.defaultDialog(
         title: 'Selecione a quantidade',
-        content: Padding(
-          padding: const EdgeInsets.all(8),
-          child: TextFormField(
-            decoration: const InputDecoration(prefix: Text('R\$ ')),
-            controller: quantityController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              ThousandsFormatter(
-                formatter: NumberFormat('###,###,###.##'),
-                allowFraction: true,
-              )
-            ],
-          ),
+        content: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextFormField(
+                decoration: const InputDecoration(prefix: Text('R\$ ')),
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  ThousandsFormatter(
+                    formatter: NumberFormat('###,###,###.##'),
+                    allowFraction: true,
+                  )
+                ],
+              ),
+            ),
+            isRetrive
+                ? Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: TextFormField(
+                      controller: categoriaController,
+                    ),
+                  )
+                : SizedBox(),
+          ],
         ),
         onConfirm: () {
           isRetrive ? _retirarCapital() : _adicionarCapital();
@@ -57,16 +70,21 @@ class _HomePageState extends State<HomePage> {
     final database = await DatabaseSqlite().openConnection();
     var regitroAtual = await database.query('psd');
     var regitroDeGastos = await database.query('gastos');
-    print(regitroDeGastos);
+    print(regitroAtual);
 
     setState(() {
       dinheiros = regitroAtual
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
-      // gastos = regitroDeGastos
-      //     .map<GastosModel>((result) => GastosModel.fromMap(result))
-      //     .toList();
+      print(regitroDeGastos);
+      if (regitroDeGastos.isNotEmpty) {
+        gastos = regitroDeGastos
+            .map<GastosModel>((result) => GastosModel.fromMap(result))
+            .toList();
+      }
+
       _isLoading = false;
+      print(_isLoading);
     });
   }
 
@@ -78,25 +96,25 @@ class _HomePageState extends State<HomePage> {
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
       double total = double.parse(
-            dinheiros[0].dinheiroAtual.toStringAsFixed(2),
+            dinheiros[0].dinheiroatual.toStringAsFixed(2),
           ) +
           double.parse(quantityController.text);
       double totalAdicionado =
-          dinheiros[0].dinheiroRecebido + double.parse(quantityController.text);
+          dinheiros[0].dinheirorecebido + double.parse(quantityController.text);
 
       database.update(
         'psd',
         {'dinheiroatual': total},
         where: 'dinheiroatual = ?',
-        whereArgs: [dinheiros[0].dinheiroAtual],
+        whereArgs: [dinheiros[0].dinheiroatual],
       );
       database.update(
         'psd',
         {'dinheirorecebido': totalAdicionado},
         where: 'dinheirorecebido = ?',
-        whereArgs: [dinheiros[0].dinheiroRecebido],
+        whereArgs: [dinheiros[0].dinheirorecebido],
       );
-      print(dinheiros[0].dinheiroAtual);
+      print(dinheiros[0].dinheiroatual);
     });
     _select();
   }
@@ -109,29 +127,24 @@ class _HomePageState extends State<HomePage> {
           .map<DinheiroModel>((result) => DinheiroModel.fromMap(result))
           .toList();
       double total = double.parse(
-            dinheiros[0].dinheiroAtual.toStringAsFixed(2),
+            dinheiros[0].dinheiroatual.toStringAsFixed(2),
           ) -
           double.parse(quantityController.text);
-      double totalRetirado =
-          gastos[0].dinheiroGasto + double.parse(quantityController.text);
+      double totalRetirado = gastos.isNotEmpty
+          ? dinheiros[0].dinheirototalgasto +
+              double.parse(quantityController.text)
+          : double.parse(quantityController.text);
       database.update(
         'psd',
-        {'dinheirogasto': totalRetirado},
+        {'dinheiroatual': total, 'dinheirototalgasto': totalRetirado},
         where: 'dinheiroatual = ?',
-        whereArgs: [dinheiros[0].dinheiroAtual],
-      );
-      database.update(
-        'psd',
-        {'dinheiroatual': total},
-        where: 'dinheiroatual = ?',
-        whereArgs: [dinheiros[0].dinheiroAtual],
+        whereArgs: [dinheiros[0].dinheiroatual],
       );
       database.insert(
         'gastos',
         {
-          'categoria': 'lazer',
-          'dinheirogasto':
-              gastos[0].dinheiroGasto + double.parse(quantityController.text)
+          'categoria': categoriaController.text,
+          'dinheirogasto': double.parse(quantityController.text)
         },
       );
     });
@@ -141,6 +154,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Builder(
           builder: (context) {
@@ -152,157 +166,204 @@ class _HomePageState extends State<HomePage> {
               var dinheiroAtualFormatado = NumberFormat.simpleCurrency(
                 locale: 'pt-BR',
                 decimalDigits: 2,
-              ).format(dinheiros[0].dinheiroAtual);
+              ).format(dinheiros[0].dinheiroatual);
               var dinheiroRecebidoFormatado = NumberFormat.simpleCurrency(
                 locale: 'pt-BR',
                 decimalDigits: 2,
-              ).format(dinheiros[0].dinheiroRecebido);
-              var dinheiroGastoFormatado = NumberFormat.simpleCurrency(
-                locale: 'pt-BR',
-                decimalDigits: 2,
-              ).format(gastos[0].dinheiroGasto);
+              ).format(dinheiros[0].dinheirorecebido);
+              var dinheiroGastoTotalFormatado = 'R\$ 0,00';
+              var dinheiroGastoFormatado = 'R\$ 0,00';
 
-              return Column(
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
-                      child: Text(
-                        dinheiroAtualFormatado,
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                        ),
+              dinheiroGastoTotalFormatado = NumberFormat.simpleCurrency(
+                locale: 'ptR-BR',
+                decimalDigits: 2,
+              ).format(dinheiros[0].dinheirototalgasto);
+
+              return SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * .2,
+                      child: Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 8, right: 8, top: 8),
+                              child: Text(
+                                dinheiroAtualFormatado,
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Recebido',
+                                          style: TextStyle(
+                                            fontFamily: 'Montserrat',
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        Text(
+                                          dinheiroRecebidoFormatado,
+                                          style: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 20,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Gastos',
+                                          style: TextStyle(
+                                            fontFamily: 'Montserrat',
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        Text(
+                                          '- $dinheiroGastoTotalFormatado',
+                                          style: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 20,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Recebido',
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 18,
-                                  ),
-                                ),
-                                Text(
-                                  dinheiroRecebidoFormatado,
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 20,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * .67,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: gastos.length,
+                        itemBuilder: (b, i) {
+                          if (gastos.isEmpty) {
+                            return const SizedBox();
+                          } else {
+                            var gasto = gastos[i];
+                            dinheiroGastoFormatado =
+                                NumberFormat.simpleCurrency(
+                              locale: 'ptR-BR',
+                              decimalDigits: 2,
+                            ).format(gasto.dinheirogasto);
+                            return ListTile(
+                              leading: Icon(Icons.add_reaction),
+                              title: Text(gasto.categoria),
+                              trailing: Text(dinheiroGastoFormatado),
+                            );
+                            // return Row(
+                            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            //   children: [
+                            //     Icon(Icons.add_reaction_rounded),
+                            //     Text(gasto.categoria),
+                            //     Text(dinheiroGastoFormatado),
+                            //   ],
+                            // );
+                          }
+                        },
                       ),
-                      Expanded(
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Gastos',
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 18,
+                    ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * .1,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: lessButtonTapped
+                                ? FloatingActionButton.extended(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectQuantity(true);
+                                      });
+                                    },
+                                    tooltip: 'Registrar gastos',
+                                    label: const Text('Registrar gastos'),
+                                    icon: const Icon(Icons.remove),
+                                  )
+                                : FloatingActionButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        plusButtonTapped = false;
+                                        lessButtonTapped = true;
+                                      });
+                                    },
+                                    child: const Icon(Icons.remove),
                                   ),
-                                ),
-                                Text(
-                                  '- $dinheiroGastoFormatado',
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 20,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: plusButtonTapped
+                                ? FloatingActionButton.extended(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectQuantity();
+                                      });
+                                    },
+                                    tooltip: 'Adicionar dinheiro',
+                                    label: const Text('Adicionar dinheiro'),
+                                    icon: const Icon(Icons.add),
+                                  )
+                                : FloatingActionButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        plusButtonTapped = true;
+                                        lessButtonTapped = false;
+                                      });
+                                      print(plusButtonTapped);
+                                    },
+                                    child: const Icon(Icons.add),
+                                  ),
+                          ),
+                        ],
                       ),
-                    ],
-                  )
-                ],
+                    ),
+                  ],
+                ),
               );
             }
           },
         ),
-      ),
-      bottomNavigationBar: Builder(
-        builder: (context) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: lessButtonTapped
-                    ? FloatingActionButton.extended(
-                        onPressed: () {
-                          setState(() {
-                            _selectQuantity(true);
-                          });
-                        },
-                        tooltip: 'Registrar gastos',
-                        label: const Text('Registrar gastos'),
-                        icon: const Icon(Icons.remove),
-                      )
-                    : FloatingActionButton(
-                        onPressed: () {
-                          setState(() {
-                            plusButtonTapped = false;
-                            lessButtonTapped = true;
-                          });
-                        },
-                        child: const Icon(Icons.remove),
-                      ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: plusButtonTapped
-                    ? FloatingActionButton.extended(
-                        onPressed: () {
-                          setState(() {
-                            _selectQuantity();
-                          });
-                        },
-                        tooltip: 'Adicionar dinheiro',
-                        label: const Text('Adicionar dinheiro'),
-                        icon: const Icon(Icons.add),
-                      )
-                    : FloatingActionButton(
-                        onPressed: () {
-                          setState(() {
-                            plusButtonTapped = true;
-                            lessButtonTapped = false;
-                          });
-                          print(plusButtonTapped);
-                        },
-                        child: const Icon(Icons.add),
-                      ),
-              ),
-            ],
-          );
-        },
       ),
     );
   }
@@ -310,27 +371,31 @@ class _HomePageState extends State<HomePage> {
 
 class DinheiroModel {
   int id;
-  double dinheiroAtual;
-  double dinheiroRecebido;
+  double dinheiroatual;
+  double dinheirorecebido;
+  double dinheirototalgasto;
   DinheiroModel({
     required this.id,
-    required this.dinheiroAtual,
-    required this.dinheiroRecebido,
+    required this.dinheiroatual,
+    required this.dinheirorecebido,
+    required this.dinheirototalgasto,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
-      'dinheiroAtual': dinheiroAtual,
-      'dinheiroRecebido': dinheiroRecebido,
+      'dinheiroatual': dinheiroatual,
+      'dinheirorecebido': dinheirorecebido,
+      'dinheirototalgasto': dinheirototalgasto,
     };
   }
 
   factory DinheiroModel.fromMap(Map<String, dynamic> map) {
     return DinheiroModel(
       id: map['id'] as int,
-      dinheiroAtual: map['dinheiroAtual'] as double,
-      dinheiroRecebido: map['dinheiroRecebido'] as double,
+      dinheiroatual: map['dinheiroatual'] as double,
+      dinheirorecebido: map['dinheirorecebido'] as double,
+      dinheirototalgasto: map['dinheirototalgasto'] as double,
     );
   }
 
@@ -340,29 +405,30 @@ class DinheiroModel {
       DinheiroModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() =>
-      'DinheiroModel(id: $id, dinheiroAtual: $dinheiroAtual, dinheiroRecebido: $dinheiroRecebido)';
+  String toString() {
+    return 'DinheiroModel(id: $id, dinheiroatual: $dinheiroatual, dinheirorecebido: $dinheirorecebido, dinheirototalgasto: $dinheirototalgasto)';
+  }
 }
 
 class GastosModel {
   String categoria;
-  double dinheiroGasto;
+  double dinheirogasto;
   GastosModel({
     required this.categoria,
-    required this.dinheiroGasto,
+    required this.dinheirogasto,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'categoria': categoria,
-      'dinheiroGasto': dinheiroGasto,
+      'dinheirogasto': dinheirogasto,
     };
   }
 
   factory GastosModel.fromMap(Map<String, dynamic> map) {
     return GastosModel(
       categoria: map['categoria'] as String,
-      dinheiroGasto: map['dinheiroGasto'] as double,
+      dinheirogasto: map['dinheirogasto'] as double,
     );
   }
 
@@ -373,5 +439,5 @@ class GastosModel {
 
   @override
   String toString() =>
-      'GastosModel(categoria: $categoria, dinheiroGasto: $dinheiroGasto)';
+      'GastosModel(categoria: $categoria, dinheirogasto: $dinheirogasto)';
 }

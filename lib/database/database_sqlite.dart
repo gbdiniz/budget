@@ -23,7 +23,8 @@ class DatabaseSqlite {
           create table psd(
             id Integer primary key autoincrement,
             dinheiroatual REAL(12),
-            dinheirorecebido REAL(12)
+            dinheirorecebido REAL(12),
+            dinheirototalgasto REAL(12)
           )
         ''');
 
@@ -37,7 +38,11 @@ class DatabaseSqlite {
 
         batch.insert(
           'psd',
-          {'dinheiroatual': 0.00, 'dinheirorecebido': 0.00},
+          {
+            'dinheiroatual': 0.00,
+            'dinheirorecebido': 0.00,
+            'dinheirototalgasto': 0.00
+          },
         );
 
         batch.commit();
