@@ -10,7 +10,7 @@ class DatabaseSqlite {
 
     return await openDatabase(
       databaseFinalPath,
-      version: 4,
+      version: 1,
       onConfigure: (Database database) async {
         print('OnConfigure');
         await database.execute('PRAGMA foreign_keys = ON');
