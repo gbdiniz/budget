@@ -10,7 +10,7 @@ class DatabaseSqlite {
 
     return await openDatabase(
       databaseFinalPath,
-      version: 1,
+      version: 2,
       onConfigure: (Database database) async {
         print('OnConfigure');
         await database.execute('PRAGMA foreign_keys = ON');
@@ -20,30 +20,15 @@ class DatabaseSqlite {
         final batch = database.batch();
 
         batch.execute('''
-          create table psd(
+          create table tabela(
             id Integer primary key autoincrement,
-            dinheiroatual REAL(12),
-            dinheirorecebido REAL(12),
-            dinheirototalgasto REAL(12)
-          )
-        ''');
-
-        batch.execute('''
-          create table gastos(
-            id Integer primary key autoincrement,
+            historico TEXT,
             categoria TEXT,
-            dinheirogasto REAL(12)
+            data TEXT,
+            entrada REAL(12),
+            saida REAL(12)
           )
         ''');
-
-        batch.insert(
-          'psd',
-          {
-            'dinheiroatual': 0.00,
-            'dinheirorecebido': 0.00,
-            'dinheirototalgasto': 0.00
-          },
-        );
 
         batch.commit();
       },

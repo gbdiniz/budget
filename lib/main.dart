@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:planejando_seu_dinheiro/modules/intro_page.dart';
 
-import 'modules/home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,12 +14,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Planejando Seu Dinheiro',
+      title: 'Budget',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HomePage(),
+      home: const IntroScreen(),
     );
   }
 }
