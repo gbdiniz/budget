@@ -3,8 +3,8 @@ import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 
 PreferredSizeWidget customAppBar(String title, context) {
   return AppBar(
-    toolbarHeight: 70,
     centerTitle: true,
+    automaticallyImplyLeading: false,
     backgroundColor: Colors.amber,
     title: Center(
       child: Text(
@@ -16,11 +16,6 @@ PreferredSizeWidget customAppBar(String title, context) {
         ),
         textAlign: TextAlign.center,
       ),
-    ),
-    leading: IconButton(
-      icon: const Icon(Icons.menu),
-      color: Colors.white,
-      onPressed: () => ZoomDrawer.of(context)!.toggle(),
     ),
   );
 }

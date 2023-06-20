@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:planejando_seu_dinheiro/components/drawer_zoom.dart';
+import 'package:planejando_seu_dinheiro/modules/home_page.dart';
 import 'package:rive/rive.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -26,7 +26,7 @@ class _IntroScreenState extends State<IntroScreen>
   void initState() {
     super.initState();
     Timer(const Duration(milliseconds: 4000), () {
-      Get.off(DrawerZoom(), transition: Transition.downToUp);
+      Get.off(HomePage(), transition: Transition.downToUp);
     });
     //print('Print 2');
   }
