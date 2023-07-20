@@ -7,3 +7,17 @@ workflows:
             flutter: stable
             android_signing:
                 - keystore_reference
+        scripts:
+            - name: Set up local.properties
+            script: | 
+                echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+            - name: Get Flutter packages
+            script: | 
+                flutter packages pub get
+            - name: Build AAB with Flutter
+            script: | 
+                flutter build appbundle --release
+            artifacts:
+            - build/**/outputs/**/*.aab
+            - build/**/outputs/**/mapping.txt
+            - flutter_drive.log

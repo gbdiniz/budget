@@ -6,7 +6,6 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:pattern_formatter/numeric_formatter.dart';
 
 import 'package:planejando_seu_dinheiro/Database/database_sqlite.dart';
 import 'package:planejando_seu_dinheiro/components/navbar_widget.dart';
@@ -109,6 +108,7 @@ class _HomePageState extends State<HomePage> {
                     prefixStyle: TextStyle(fontFamily: 'Montserrat'),
                     labelStyle: TextStyle(fontFamily: 'Montserrat'),
                   ),
+                  // keyboardType: TextInputType.numberWithOptions(decimal: true),
                   controller: quantityController,
                   // inputFormatters: [
                   //   ThousandsFormatter(
