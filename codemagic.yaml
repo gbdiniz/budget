@@ -5,7 +5,6 @@ workflows:
         environment:
             flutter: stable
             groups:
-                - keystore_credentials
                 - google_play
             vars:
                 PACKAGE_NAME: "com.devdesenvolvimento.budget"
