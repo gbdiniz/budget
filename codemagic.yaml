@@ -1,10 +1,15 @@
 workflows:
-    sample-workflow:
-        name: Codemagic Sample Workflow
+    android-workflow:
+        name: Android Budget Sign in
         max_build_duration: 120
-        instance_type: mac_mini_m1
         environment:
             flutter: stable
+            groups:
+                - keystore_credentials
+                - google_play
+            vars:
+                PACKAGE_NAME: "com.devdesenvolvimento.budget"
+                GOOGLE_PLAY_TRACK: alpha
             android_signing:
                 - keystore_reference
         scripts:
@@ -16,8 +21,20 @@ workflows:
                 flutter packages pub get
             - name: Build AAB with Flutter
               script: | 
-                flutter build appbundle --release
+                BUILD_NUMBER=$(($(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks="$GOOGLE_PLAY_TRACK") + 1))      
+                flutter build appbundle --release \
+                  --build-name=1.0.$BUILD_NUMBER \
+                  --build-number=$BUILD_NUMBER
         artifacts:
           - build/**/outputs/**/*.aab
           - build/**/outputs/**/mapping.txt
           - flutter_drive.log
+        publishing:
+            email:
+                recipients:
+                  - user_1@example.com
+                  - user_2@example.com
+            google_play:
+                credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+                track: $GOOGLE_PLAY_TRACK
+                submit_as_draft: true
