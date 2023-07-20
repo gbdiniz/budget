@@ -5,11 +5,13 @@ import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:pattern_formatter/numeric_formatter.dart';
 
 import 'package:planejando_seu_dinheiro/Database/database_sqlite.dart';
 import 'package:planejando_seu_dinheiro/components/navbar_widget.dart';
 import 'package:planejando_seu_dinheiro/components/variables.dart';
+import 'package:planejando_seu_dinheiro/modules/help_page.dart';
 import 'package:rive/rive.dart';
 
 import '../model/tabela_model.dart';
@@ -244,6 +246,37 @@ class _HomePageState extends State<HomePage> {
                           Stack(
                             children: [
                               Align(
+                                alignment: Alignment.centerLeft,
+                                // child: Material(
+                                //   color: Colors.transparent,
+                                //   child: InkWell(
+                                //     onTap: () {},
+                                //     child: Icon(
+                                //       Ionicons.help_circle_sharp,
+                                //       size: 35,
+                                //       color: Colors.white,
+                                //     ),
+                                //     borderRadius:
+                                //         BorderRadius.all(Radius.circular(40)),
+                                //     splashColor: Colors.red,
+                                //   ),
+                                // ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: IconButton(
+                                    color: Colors.white,
+                                    icon:
+                                        const Icon(Ionicons.help_circle_sharp),
+                                    splashColor: Colors.red,
+                                    splashRadius: 22,
+                                    iconSize: 30,
+                                    onPressed: () {
+                                      Get.to(HelpPage());
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Align(
                                 alignment: Alignment.center,
                                 child: Column(
                                   children: [
@@ -270,13 +303,18 @@ class _HomePageState extends State<HomePage> {
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: IconButton(
-                                  onPressed: () {
-                                    _selecionarValores();
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  iconSize: 30,
-                                  color: Colors.red,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      _selecionarValores();
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    iconSize: 30,
+                                    splashColor: Colors.red,
+                                    splashRadius: 22,
+                                    color: Colors.red,
+                                  ),
                                 ),
                               )
                             ],
