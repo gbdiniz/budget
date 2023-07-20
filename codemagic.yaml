@@ -5,3 +5,5 @@ workflows:
         instance_type: mac_mini_m1
         environment:
             flutter: stable
+            android_signing:
+                - keystore_reference
