@@ -9,15 +9,15 @@ workflows:
                 - keystore_reference
         scripts:
             - name: Set up local.properties
-            script: | 
+              script: | 
                 echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
             - name: Get Flutter packages
-            script: | 
+              script: | 
                 flutter packages pub get
             - name: Build AAB with Flutter
-            script: | 
+              script: | 
                 flutter build appbundle --release
-            artifacts:
-            - build/**/outputs/**/*.aab
-            - build/**/outputs/**/mapping.txt
-            - flutter_drive.log
+        artifacts:
+          - build/**/outputs/**/*.aab
+          - build/**/outputs/**/mapping.txt
+          - flutter_drive.log
