@@ -43,7 +43,7 @@ workflows:
           app_store_connect: Codemagic
         environment:
             ios_signing:
-                distribution_type: app_store # or: ad_hoc | development | enterprise
+                distribution_type: app_store
                 bundle_identifier: com.devdesenvolvimento.budget
             vars:
               BUNDLE_ID: "com.devdesenvolvimento.budget"
