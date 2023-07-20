@@ -11,7 +11,7 @@ workflows:
                 PACKAGE_NAME: "com.devdesenvolvimento.budget"
                 GOOGLE_PLAY_TRACK: alpha
             android_signing:
-                - keystore_reference
+                - codemagic
         scripts:
             - name: Set up local.properties
               script: | 
