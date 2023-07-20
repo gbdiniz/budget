@@ -1,23 +1,101 @@
 workflows:
-    sample-workflow:
-        name: Codemagic Sample Workflow
+    android-workflow:
+        name: Android Budget Sign in
         max_build_duration: 120
-        instance_type: mac_mini_m1
         environment:
             flutter: stable
+            groups:
+                - google_play
+            vars:
+                PACKAGE_NAME: "com.devdesenvolvimento.budget"
+                GOOGLE_PLAY_TRACK: alpha
             android_signing:
-                - keystore_reference
+                - codemagic
         scripts:
             - name: Set up local.properties
-            script: | 
+              script: | 
                 echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
             - name: Get Flutter packages
-            script: | 
+              script: | 
                 flutter packages pub get
             - name: Build AAB with Flutter
+              script: | 
+                BUILD_NUMBER=$(($(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks="$GOOGLE_PLAY_TRACK") + 1))      
+                flutter build appbundle --release \
+                  --build-name=1.0.$BUILD_NUMBER \
+                  --build-number=$BUILD_NUMBER
+        artifacts:
+          - build/**/outputs/**/*.aab
+          - build/**/outputs/**/mapping.txt
+          - flutter_drive.log
+        publishing:
+            email:
+                recipients:
+                  - gabrieldnz12@outlook.com
+            google_play:
+                credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+                track: $GOOGLE_PLAY_TRACK
+                submit_as_draft: true
+    ios-workflow:
+        name: iOS Workflow
+        max_build_duration: 120
+        integrations:
+          app_store_connect: Codemagic
+        environment:
+            ios_signing:
+                distribution_type: app_store
+                bundle_identifier: com.devdesenvolvimento.budget
+            vars:
+              BUNDLE_ID: "com.devdesenvolvimento.budget"
+              XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Name of your Xcode workspace
+              XCODE_SCHEME: "Runner" # <-- Name of your Xcode scheme
+              APP_STORE_APPLE_ID: appdevdesenvolvimento@gmail.com
+            xcode: latest
+            cocoapods: default
+        scripts:
+          - name: Install CocoaPods dependencies
             script: | 
-                flutter build appbundle --release
-            artifacts:
-            - build/**/outputs/**/*.aab
-            - build/**/outputs/**/mapping.txt
-            - flutter_drive.log
+              pod install
+          - name: Build ipa for distribution
+            script: | 
+              xcode-project build-ipa \
+                --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
+                --scheme "$XCODE_SCHEME"
+          - name: Set up code signing settings on Xcode project
+            script: xcode-project use-profiles
+          - name: Increment build number
+            script: | 
+              #!/bin/sh
+              cd $CM_BUILD_DIR
+              LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+              agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+        publishing: 
+          email:
+            recipients:
+              - gabrieldnz12@outlook.com
+          app_store_connect:
+            # Use referenced App Store Connect API key to authenticate binary upload
+            auth: integration 
+
+            # Configuration related to TestFlight (optional)
+
+            # Optional boolean, defaults to false. Whether or not to submit the uploaded
+            # build to TestFlight beta review. Required for distributing to beta groups.
+            # Note: This action is performed during post-processing.
+            submit_to_testflight: true 
+
+            # Optional boolean, defaults to false. Set to true to automatically expire 
+            # previous build in review or waiting for review in Testflight before
+            # submitting a new build to beta review. Expired builds will no longer be available for testers.
+            # Note: This action is performed during post-processing.
+            expire_build_submitted_for_review: true
+
+            # Specify the names of beta tester groups that will get access to the build 
+            # once it has passed beta review.
+            beta_groups: 
+              - group budget test
+        artifacts:
+          - build/ios/ipa/*.ipa
+          - /tmp/xcodebuild_logs/*.log
+          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
