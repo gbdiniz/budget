@@ -54,13 +54,9 @@ workflows:
             cocoapods: default
         scripts:
           - name: Install CocoaPods dependencies
-            script: | 
+            script: |
+              cd ios
               pod install
-          - name: Build ipa for distribution
-            script: | 
-              xcode-project build-ipa \
-                --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
-                --scheme "$XCODE_SCHEME"
           - name: Set up code signing settings on Xcode project
             script: xcode-project use-profiles
           - name: Increment build number
@@ -69,6 +65,11 @@ workflows:
               cd $CM_BUILD_DIR
               LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
               agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          - name: Build ipa for distribution
+            script: | 
+              xcode-project build-ipa \
+                --workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
+                --scheme "$XCODE_SCHEME"
         publishing: 
           email:
             recipients:
