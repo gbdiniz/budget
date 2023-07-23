@@ -56,10 +56,6 @@ workflows:
           - name: Flutter upgrade
             script: |
               flutter upgrade
-          - name: Install CocoaPods dependencies
-            script: |
-              cd ios
-              pod install
           - name: Set up code signing settings on Xcode project
             script: xcode-project use-profiles
           - name: Increment build number
