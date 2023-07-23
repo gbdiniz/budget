@@ -18,12 +18,6 @@ workflows:
             - name: Get Flutter packages
               script: | 
                 flutter packages pub get
-            - name: Increment build number
-              script: | 
-                #!/bin/sh
-                cd $CM_BUILD_DIR
-                LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
-                agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
             - name: Build AAB with Flutter
               script: | 
                 BUILD_NUMBER=$(($(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks="$GOOGLE_PLAY_TRACK") + 1))      
@@ -63,6 +57,12 @@ workflows:
 
             - script: xcode-project use-profiles
             - script: flutter packages pub get
+            - name: Increment build number
+              script: | 
+                #!/bin/sh
+                cd $CM_BUILD_DIR
+                LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+                agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
             - name: Flutter build ipa and automatic versioning
               script: |
                 flutter build ipa --export-options-plist=/Users/builder/export_options.plist
