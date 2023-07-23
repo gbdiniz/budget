@@ -53,6 +53,9 @@ workflows:
             xcode: latest
             cocoapods: default
         scripts:
+          - name: Flutter upgrade
+            script: |
+              flutter upgrade
           - name: Install CocoaPods dependencies
             script: |
               cd ios
