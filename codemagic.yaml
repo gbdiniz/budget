@@ -57,29 +57,3 @@ workflows:
           email:
             recipients:
               - gabrieldnz12@outlook.com
-          app_store_connect:
-            # Use referenced App Store Connect API key to authenticate binary upload
-            auth: integration 
-
-            # Configuration related to TestFlight (optional)
-
-            # Optional boolean, defaults to false. Whether or not to submit the uploaded
-            # build to TestFlight beta review. Required for distributing to beta groups.
-            # Note: This action is performed during post-processing.
-            submit_to_testflight: true 
-
-            # Optional boolean, defaults to false. Set to true to automatically expire 
-            # previous build in review or waiting for review in Testflight before
-            # submitting a new build to beta review. Expired builds will no longer be available for testers.
-            # Note: This action is performed during post-processing.
-            expire_build_submitted_for_review: true
-
-            # Specify the names of beta tester groups that will get access to the build 
-            # once it has passed beta review.
-            beta_groups: 
-              - group budget test
-        artifacts:
-          - build/ios/ipa/*.ipa
-          - /tmp/xcodebuild_logs/*.log
-          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-          - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
