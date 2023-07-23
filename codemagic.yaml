@@ -18,6 +18,12 @@ workflows:
             - name: Get Flutter packages
               script: | 
                 flutter packages pub get
+            - name: Increment build number
+              script: | 
+                #!/bin/sh
+                cd $CM_BUILD_DIR
+                LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+                agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
             - name: Build AAB with Flutter
               script: | 
                 BUILD_NUMBER=$(($(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks="$GOOGLE_PLAY_TRACK") + 1))      
@@ -48,7 +54,7 @@ workflows:
             BUNDLE_ID: "com.devdesenvolvimento.budget"
             XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Put the name of your Xcode workspace here
             XCODE_SCHEME: "Runner" # <-- Put the name of your Xcode scheme here
-            APP_STORE_APPLE_ID: appdevdesenvolvimento@gmail.com
+            APP_STORE_APPLE_ID: 6451202221 # <-- Coloque o apple id do aplicativo em específico geral - informações do app - apple id
           xcode: latest
           cocoapods: default
         scripts:
