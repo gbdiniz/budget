@@ -38,24 +38,21 @@ workflows:
                 submit_as_draft: true
     ios-workflow:
         name: iOS Workflow
-        max_build_duration: 120
-        integrations:
-          app_store_connect: Codemagic
         environment:
             ios_signing:
                 distribution_type: app_store
                 bundle_identifier: com.devdesenvolvimento.budget
-            vars:
-              BUNDLE_ID: "com.devdesenvolvimento.budget"
-              XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Name of your Xcode workspace
-              XCODE_SCHEME: "Runner" # <-- Name of your Xcode scheme
-              APP_STORE_APPLE_ID: appdevdesenvolvimento@gmail.com
-            xcode: latest
-            cocoapods: default
         scripts:
-          - name: Build ipa for distribution
-            script: |
-              flutter build ipa
+            - script: keychain initialize
+            - script: keychain add-certificates
+
+            - script: xcode-project use-profiles
+            - script: flutter packages pub get
+            - name: Flutter build ipa and automatic versioning
+              script: /
+                flutter build ipa --export-options-plist=/Users/builder/export_options.plist
+        artifacts: 
+          - build/ios/ipa/*.ipa
         publishing: 
           email:
             recipients:
