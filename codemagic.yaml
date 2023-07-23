@@ -38,10 +38,19 @@ workflows:
                 submit_as_draft: true
     ios-workflow:
         name: iOS Workflow
+        integrations:
+          app_store_connect: Codemagic
         environment:
-            ios_signing:
-                distribution_type: app_store
-                bundle_identifier: com.devdesenvolvimento.budget
+          ios_signing:
+            distribution_type: app_store
+            bundle_identifier: com.devdesenvolvimento.budget
+          vars:
+            BUNDLE_ID: "com.devdesenvolvimento.budget"
+            XCODE_WORKSPACE: "Runner.xcworkspace" # <-- Put the name of your Xcode workspace here
+            XCODE_SCHEME: "Runner" # <-- Put the name of your Xcode scheme here
+            APP_STORE_APPLE_ID: appdevdesenvolvimento@gmail.com
+          xcode: latest
+          cocoapods: default
         scripts:
             - script: keychain initialize
             - script: keychain add-certificates
@@ -57,3 +66,9 @@ workflows:
           email:
             recipients:
               - gabrieldnz12@outlook.com
+          app_store_connect:
+            auth: integration
+    
+            # Configuration related to TestFlight (optional)
+            # Note: This action is performed during post-processing.
+            submit_to_testflight: true
