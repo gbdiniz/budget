@@ -193,9 +193,11 @@ class _HomePageState extends State<HomePage> {
       database.update(
           'tabela',
           {
-            'entrada': entrada == 0 ? 0 : double.parse(quantityController.text),
-            'saida': saida == 0 ? 0 : double.parse(quantityController.text),
+            'entrada':
+                dropDownvalue == 'Entrada' ? double.parse(formatedValue) : 0,
+            'saida': dropDownvalue == 'Saída' ? double.parse(formatedValue) : 0,
             'historico': historicoController.text,
+            'categoria': categoriaController.text,
             'data': format.format(data),
           },
           where: 'id = ?',
@@ -498,12 +500,28 @@ class _HomePageState extends State<HomePage> {
                                           spacing: 1,
                                           flex: 1,
                                           onPressed: (context) {
+                                            quantityController =
+                                                MoneyMaskedTextController(
+                                              initialValue:
+                                                  registro.entrada == 0.0
+                                                      ? registro.saida
+                                                      : registro.entrada,
+                                            );
+                                            categoriaController.text =
+                                                registro.categoria;
+                                            historicoController.text =
+                                                registro.historico;
+                                            dropDownvalue =
+                                                registro.entrada == 0.0
+                                                    ? 'Saída'
+                                                    : 'Entrada';
                                             _selecionarValores(
-                                                registro.id,
-                                                true,
-                                                false,
-                                                registro.entrada,
-                                                registro.saida);
+                                              registro.id,
+                                              true,
+                                              false,
+                                              registro.entrada,
+                                              registro.saida,
+                                            );
                                           },
                                           backgroundColor: Colors.green,
                                           foregroundColor: Colors.white,
