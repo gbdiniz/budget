@@ -32,8 +32,19 @@ class DatabaseSqlite {
 
         batch.commit();
       },
-      onUpgrade: (Database database, int oldVersion, int newVersion) {
+      onUpgrade: (Database database, int oldVersion, int newVersion) async {
         print('OnUpgrade');
+        final batch = database;
+        if (oldVersion < newVersion) {
+          // Executar a operação de atualização (migração) da tabela
+          await batch.transaction((txn) async {
+            // Adicionar a nova coluna à tabela existente
+            await txn.execute('''
+            ALTER TABLE tabela
+            ADD COLUMN nova_coluna TEXT
+          ''');
+          });
+        }
       },
       onDowngrade: (Database database, int oldVersion, int newVersion) {
         print('OnDowngrade');
